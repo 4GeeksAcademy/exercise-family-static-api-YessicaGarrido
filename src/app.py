@@ -16,6 +16,22 @@ CORS(app)
 # Create the jackson family object
 jackson_family = FamilyStructure("Jackson")
 
+jackson_family.add_member({
+    "first_name": "John",
+    "age": 33,
+    "lucky_number": [7, 13, 22]
+})
+jackson_family.add_member({
+    "first_name": "Jane",
+    "age": 35,
+    "lucky_number": [10, 4, 3]
+})
+jackson_family.add_member({
+    "first_name": "Jimmy",
+    "age": 5,
+    "lucky_number": [1]
+})
+
 
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
@@ -30,13 +46,48 @@ def sitemap():
 
 
 @app.route('/members', methods=['GET'])
-def handle_hello():
-    # This is how you can use the Family datastructure by calling its methods
-    members = jackson_family.get_all_members()
-    response_body = {"hello": "world",
-                     "family": members}
-    return jsonify(response_body), 200
+def get_all_members():
+        return jsonify(jackson_family.get_all_members()), 200
 
+
+@app.route('/members/<int:member_id>', methods=['GET'])
+def get_single_member(member_id):
+    member = jackson_family.get_member(member_id)
+    if member is None:
+        return jsonify({"error": "miembro no encontrado"}), 404
+    return jsonify(member), 200
+
+@app.route('/members', methods=['POST'])
+def add_member():
+    body= request.get_json()
+    if not body:
+        return jsonify({"error" : "solicitud incorrecta"}), 400
+    
+    required_fields=["first_name", "age", "lucky_numbers"]
+    for field in required_fields:
+        if field not in body:
+            return jsonify({"error": "faltan campo obligatorios"}), 400
+        
+        new_member ={
+            "first_name" : body["first_name"],
+            "age" : body["age"],
+            "lucky_numbers" : body["lucky_numbers"]
+            }
+        
+        member = jackson_family.add_member(new_member)
+        return jsonify(member), 200
+
+
+    
+
+@app.route('/member/<int:id>' , methods=['DELETE'])  
+def delete_member(member_id):
+    deleted = jackson_family.delete_member(member_id)
+    if not deleted:
+        return jsonify ({"error": "miembro no encontrado"}), 404
+    
+    return jsonify({ "done" : True}), 200
+     
 
 
 # This only runs if `$ python src/app.py` is executed
